@@ -21,9 +21,9 @@ WUT_ROOT := $(DEVKITPRO)/wut
 #-------------------------------------------------------------------------------
 TARGET		:=	MQTTModule
 BUILD		:=	build
-SOURCES		:=	source
+SOURCES		:=	source source/mqtt/src
 DATA		:=	data
-INCLUDES	:=	source
+INCLUDES	:=	source source/mqtt/include
 
 #-------------------------------------------------------------------------------
 # options for code generation
