@@ -3,6 +3,7 @@
 
 #include <mqtt.h>
 
+mqtt_client mqtt_client;
 WUMS_MODULE_EXPORT_NAME("homebrew_mqtt");
 WUMS_MODULE_AUTHOR("ItzSwirlz + Wii U Smart Home Project Team");
 WUMS_MODULE_VERSION("0.1");
