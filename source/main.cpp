@@ -3,12 +3,15 @@
 
 #include <mqtt.h>
 
-mqtt_client mqtt_client;
+#include <nn/ac.h>
+
 WUMS_MODULE_EXPORT_NAME("homebrew_mqtt");
 WUMS_MODULE_AUTHOR("ItzSwirlz + Wii U Smart Home Project Team");
 WUMS_MODULE_VERSION("0.1");
 WUMS_MODULE_LICENSE("TBD");
 WUMS_MODULE_DESCRIPTION("MQTT broker");
+
+mqtt_client mqtt_client;
 
 /**
  * If this modules depends on another module (e.g. the FunctionPatcherModule) you can add a dependency to that module.
@@ -34,7 +37,8 @@ WUMS_INITIALIZE(/*wums_app_init_args_t*/ args) {
 }
 
 WUMS_APPLICATION_STARTS() {
-    /* Called whenever a new application has been started */
+    nn::ac::Initialize();
+    nn::ac::ConnectAsync();
 }
 
 WUMS_APPLICATION_REQUESTS_EXIT() {

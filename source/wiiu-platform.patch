@@ -1,0 +1,143 @@
+diff --git a/include/mqtt_pal.h b/include/mqtt_pal.h
+index 3a32a1f..ff36aca 100644
+--- a/include/mqtt_pal.h
++++ b/include/mqtt_pal.h
+@@ -25,6 +25,60 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.
+ */
+ 
++
++// ------------------------
++//     Start  Wii U
++// ------------------------
++
++// type definitions
++#include <stdarg.h>
++#include <stddef.h>
++#include <stdint.h>
++#include <string.h>
++#include <sys/types.h>
++
++// limits
++#include <limits.h>
++
++
++
++// Time
++#include <coreinit/time.h>
++
++typedef OSTime mqtt_pal_time_t;
++
++#define MQTT_PAL_TIME() OSGetTime()
++
++
++
++// Mutex
++#include <coreinit/mutex.h>
++
++typedef OSMutex mqtt_pal_mutex_t;
++
++#define MQTT_PAL_MUTEX_INIT(mtx_ptr) OSInitMutexEx(mtx_ptr, "MQTT Mutex")
++#define MQTT_PAL_MUTEX_LOCK(mtx_ptr) OSLockMutex(mtx_ptr)
++#define MQTT_PAL_MUTEX_UNLOCK(mtx_ptr) OSUnlockMutex(mtx_ptr)
++
++
++
++// Socket + handling
++#include <arpa/inet.h>
++
++typedef int mqtt_pal_socket_handle;
++
++#define MQTT_PAL_HTONS(s) htons(s)
++#define MQTT_PAL_NTOHS(s) ntohs(s)
++
++
++
++// Error handling
++#include <sys/errno.h>
++
++// ------------------------
++//      End Wii U
++// ------------------------
++
+ #if defined(__cplusplus)
+ extern "C" {
+ #endif
+diff --git a/src/mqtt_pal.c b/src/mqtt_pal.c
+index 27e8149..fa60125 100644
+--- a/src/mqtt_pal.c
++++ b/src/mqtt_pal.c
+@@ -431,7 +431,72 @@ ssize_t mqtt_pal_recvall(mqtt_pal_socket_handle fd, void* buf, size_t bufsz, int
+ 
+ #else
+ 
+-#error No PAL!
++// ------------------------
++//     Start  Wii U
++// ------------------------
++// Same as regular unix.
++ssize_t mqtt_pal_sendall(mqtt_pal_socket_handle fd, const void* buf, size_t len, int flags) {
++    enum MQTTErrors error = 0;
++    size_t sent = 0;
++    while(sent < len) {
++        ssize_t rv = send(fd, (const char*)buf + sent, len - sent, flags);
++        if (rv < 0) {
++            if (errno == EAGAIN) {
++                /* should call send later again */
++                break;
++            }
++            error = MQTT_ERROR_SOCKET_ERROR;
++            break;
++        }
++        if (rv == 0) {
++            /* is this possible? maybe OS bug. */
++            error = MQTT_ERROR_SOCKET_ERROR;
++            break;
++        }
++        sent += (size_t) rv;
++    }
++    if (sent == 0) {
++        return error;
++    }
++    return (ssize_t)sent;
++}
++
++ssize_t mqtt_pal_recvall(mqtt_pal_socket_handle fd, void* buf, size_t bufsz, int flags) {
++    const void *const start = buf;
++    enum MQTTErrors error = 0;
++    ssize_t rv;
++    do {
++        rv = recv(fd, buf, bufsz, flags);
++        if (rv == 0) {
++            /*
++             * recv returns 0 when the socket is (half) closed by the peer.
++             *
++             * Raise an error to trigger a reconnect.
++             */
++            error = MQTT_ERROR_SOCKET_ERROR;
++            break;
++        }
++        if (rv < 0) {
++            if (errno == EAGAIN || errno == EWOULDBLOCK) {
++                /* should call recv later again */
++                break;
++            }
++            /* an error occurred that wasn't "nothing to read". */
++            error = MQTT_ERROR_SOCKET_ERROR;
++            break;
++        }
++        buf = (char*)buf + rv;
++        bufsz -= (unsigned long)rv;
++    } while (bufsz > 0);
++    if (buf == start) {
++        return error;
++    }
++    return (char*)buf - (const char*)start;
++}
++
++// ------------------------
++//       End Wii U
++// ------------------------
+ 
+ #endif
+ 

@@ -9,6 +9,7 @@ endif
 TOPDIR ?= $(CURDIR)
 
 include $(DEVKITPRO)/wums/share/wums_rules
+export VERBOSE=1
 
 WUMS_ROOT := $(DEVKITPRO)/wums
 WUT_ROOT := $(DEVKITPRO)/wut
@@ -102,6 +103,7 @@ export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 all: $(BUILD)
 
 $(BUILD):
+	cd source/mqtt && git apply --reverse --check ../wiiu-platform.patch && cd ../../
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
